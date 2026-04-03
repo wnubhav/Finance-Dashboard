@@ -154,80 +154,160 @@ const TTip=({active,payload,label})=>{
   );
 };
 
+// -- Recreated Missing Component --
+function Dashboard() {
+  const {s} = useApp();
+  const sum = summary(s.transactions);
+  
+  return (
+    <div>
+      <div style={{marginBottom:22}}>
+        <div className="fd" style={{fontSize:22,fontWeight:700,letterSpacing:'-0.5px'}}>Dashboard</div>
+        <div style={{fontSize:13,color:'var(--ts)',marginTop:4}}>Overview of your finances</div>
+      </div>
+      <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+        <div className="anim" style={{...card,flex:1,minWidth:200,borderTop:'3px solid var(--gr)'}}>
+          <div style={{fontSize:12,color:'var(--tm)',fontFamily:'Space Mono',marginBottom:8}}>Total Income</div>
+          <div className="fd" style={{fontSize:24,fontWeight:700,color:'var(--gr)'}}>{fc(sum.income)}</div>
+        </div>
+        <div className="anim" style={{...card,flex:1,minWidth:200,borderTop:'3px solid var(--rd)'}}>
+          <div style={{fontSize:12,color:'var(--tm)',fontFamily:'Space Mono',marginBottom:8}}>Total Expenses</div>
+          <div className="fd" style={{fontSize:24,fontWeight:700,color:'var(--rd)'}}>{fc(sum.expenses)}</div>
+        </div>
+        <div className="anim" style={{...card,flex:1,minWidth:200,borderTop:'3px solid var(--al)'}}>
+          <div style={{fontSize:12,color:'var(--tm)',fontFamily:'Space Mono',marginBottom:8}}>Net Balance</div>
+          <div className="fd" style={{fontSize:24,fontWeight:700,color:'var(--al)'}}>{fc(sum.balance)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -- Untangled and Fixed Modal Component --
 function Modal({onClose,existing}){
   const{d}=useApp();
   const[f,sf]=useState(existing||{date:format(new Date(),'yyyy-MM-dd'),merchant:'',category:'food',type:'expense',amount:'',note:''});
   const[err,se]=useState('');
   const cat=CATS.find(c=>c.id===f.category);
   const upd=(k,v)=>{sf(p=>({...p,[k]:v}));se('');};
+  
   function submit(){
     if(!f.merchant.trim())return se('Merchant required');
     if(!f.amount||isNaN(f.amount)||+f.amount<=0)return se('Valid amount required');
     const data={...f,amount:+f.amount,categoryLabel:cat.label,categoryIcon:cat.icon,categoryColor:cat.color,id:existing?.id||`t${Date.now()}`};
-    d({type:existing?'UPD':'ADD',p:data});onClose();
+    d({type:existing?'UPD':'ADD',p:data});
+    onClose();
   }
-  const lbl={display:'block',fontSize:11,color:'var(--tm)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:6,fontFamily:'Space Mono'};
+  
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',backdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:16}}
       onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="anim" style={{...card,maxWidth:460,width:'100%',boxShadow:'0 24px 80px rgba(0,0,0,.5)'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <div className="fd" style={{fontSize:16,fontWeight:700,color:'var(--al)'}}>{existing?'Edit':'New'} Transaction</div>
-          <button onClick={()=>dlCSV(filtered)} style={gbtn}>↓ CSV</button>
-          <button onClick={()=>{const b=new Blob([JSON.stringify(filtered,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='txns.json';a.click();}} style={gbtn}>↓ JSON</button>
+          <button onClick={onClose} style={gbtn}>✕</button>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <input type="date" value={f.date} onChange={e=>upd('date',e.target.value)} style={inp}/>
+          <input placeholder="Merchant Name" value={f.merchant} onChange={e=>upd('merchant',e.target.value)} style={inp}/>
+          <input type="number" placeholder="Amount" value={f.amount} onChange={e=>upd('amount',e.target.value)} style={inp}/>
+          <div style={{display:'flex',gap:10}}>
+            <select value={f.type} onChange={e=>upd('type',e.target.value)} style={{...inp,flex:1}}>
+              <option value="expense">Expense</option><option value="income">Income</option>
+            </select>
+            <select value={f.category} onChange={e=>upd('category',e.target.value)} style={{...inp,flex:1}}>
+              {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+            </select>
+          </div>
+          {err&&<div style={{color:'var(--rd)',fontSize:12}}>{err}</div>}
+          <button onClick={submit} style={{...pbtn,marginTop:10}}>Save Transaction</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// -- Untangled and Recreated Transactions Component --
+function Transactions(){
+  const{s,d}=useApp();
+  const[modal,setModal]=useState(false);
+  const[edit,setEdit]=useState(null);
+  const[del,setDel]=useState(null);
+  
+  const isAdmin=s.role==='admin';
+  const filtered=applyFilters(s.transactions,s.filters);
+  const cols=isAdmin?'110px 2fr 1.5fr 100px 100px 60px':'110px 2fr 1.5fr 100px 100px';
+
+  const sort=(f)=>d({type:'FILTER',p:{sortBy:f,sortDir:s.filters.sortBy===f&&(s.filters.sortDir==='desc')?'asc':'desc'}});
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+        <div>
+          <div className="fd" style={{fontSize:22,fontWeight:700,letterSpacing:'-0.5px'}}>Transactions</div>
+          <div style={{fontSize:13,color:'var(--ts)',marginTop:4}}>Manage your income and expenses</div>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <button onClick={()=>{const b=new Blob([JSON.stringify(filtered,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='txns.json';a.click();}} style={gbtn}>↓ JSON</button>
+          {isAdmin&&<button onClick={()=>{setEdit(null);setModal(true);}} style={pbtn}>+ New</button>}
+        </div>
+      </div>
+
       <div className="anim" style={{...card,marginBottom:12,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
-        <input value={s.filters.search} onChange={e=>sf({search:e.target.value})} placeholder="🔍 Search..." style={{...inp,flex:'1 1 160px'}}/>
-        <select value={s.filters.type} onChange={e=>sf({type:e.target.value})} style={{...inp,width:'auto',minWidth:120}}>
+        <input value={s.filters.search} onChange={e=>d({type:'FILTER',p:{search:e.target.value}})} placeholder="🔍 Search..." style={{...inp,flex:'1 1 160px'}}/>
+        <select value={s.filters.type} onChange={e=>d({type:'FILTER',p:{type:e.target.value}})} style={{...inp,width:'auto',minWidth:120}}>
           <option value="all">All Types</option><option value="income">Income</option><option value="expense">Expense</option>
         </select>
-        <select value={s.filters.category} onChange={e=>sf({category:e.target.value})} style={{...inp,width:'auto',minWidth:140}}>
+        <select value={s.filters.category} onChange={e=>d({type:'FILTER',p:{category:e.target.value}})} style={{...inp,width:'auto',minWidth:140}}>
           <option value="all">All Categories</option>
           {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
         </select>
-        <select value={s.filters.dateRange} onChange={e=>sf({dateRange:e.target.value})} style={{...inp,width:'auto',minWidth:130}}>
+        <select value={s.filters.dateRange} onChange={e=>d({type:'FILTER',p:{dateRange:e.target.value}})} style={{...inp,width:'auto',minWidth:130}}>
           {[['7','Last 7 days'],['30','Last 30 days'],['60','Last 60 days'],['all','All time']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
         </select>
         <button onClick={()=>d({type:'FILTER',p:{search:'',type:'all',category:'all',dateRange:'30',sortBy:'date',sortDir:'desc'}})} style={gbtn}>Clear</button>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:cols,padding:'8px 14px',gap:10,borderBottom:'1px solid var(--brd)'}}>
-        {[['date','Date'],['merchant','Merchant']].map(([f,l])=>{
-          const active=s.filters.sortBy===f;
-          return <button key={f} onClick={()=>sort(f)} style={{background:'none',border:'none',cursor:'pointer',color:active?'var(--al)':'var(--tm)',fontSize:11,fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em',textAlign:'left',display:'flex',alignItems:'center',gap:3}}>
-            {l}{active?(s.filters.sortDir==='desc'?' ↓':' ↑'):' ⇅'}
-          </button>;
-        })}
-        {['Category','Type'].map(l=><span key={l} style={{fontSize:11,color:'var(--tm)',fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em'}}>{l}</span>)}
-        {(()=>{const active=s.filters.sortBy==='amount';return <button onClick={()=>sort('amount')} style={{background:'none',border:'none',cursor:'pointer',color:active?'var(--al)':'var(--tm)',fontSize:11,fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em',textAlign:'left'}}>Amount{active?(s.filters.sortDir==='desc'?' ↓':' ↑'):' ⇅'}</button>;})()}
-        {isAdmin&&<span/>}
-      </div>
-      {filtered.length===0?(
-        <div style={{textAlign:'center',padding:'60px 20px',color:'var(--tm)'}}>
-          <div style={{fontSize:38,marginBottom:10}}>◻</div>
-          <div className="fd" style={{fontSize:14}}>No transactions found</div>
-          <div style={{fontSize:12,marginTop:5}}>Try adjusting your filters</div>
+
+      <div className="anim" style={{...card, padding:0, overflow:'hidden'}}>
+        <div style={{display:'grid',gridTemplateColumns:cols,padding:'12px 14px',gap:10,borderBottom:'1px solid var(--brd)',background:'var(--surf)'}}>
+          {[['date','Date'],['merchant','Merchant']].map(([f,l])=>{
+            const active=s.filters.sortBy===f;
+            return <button key={f} onClick={()=>sort(f)} style={{background:'none',border:'none',cursor:'pointer',color:active?'var(--al)':'var(--tm)',fontSize:11,fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em',textAlign:'left',display:'flex',alignItems:'center',gap:3}}>
+              {l}{active?(s.filters.sortDir==='desc'?' ↓':' ↑'):' ⇅'}
+            </button>;
+          })}
+          {['Category','Type'].map(l=><span key={l} style={{fontSize:11,color:'var(--tm)',fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em'}}>{l}</span>)}
+          {(()=>{const active=s.filters.sortBy==='amount';return <button onClick={()=>sort('amount')} style={{background:'none',border:'none',cursor:'pointer',color:active?'var(--al)':'var(--tm)',fontSize:11,fontFamily:'Space Mono',textTransform:'uppercase',letterSpacing:'0.05em',textAlign:'right'}}>Amount{active?(s.filters.sortDir==='desc'?' ↓':' ↑'):' ⇅'}</button>;})()}
+          {isAdmin&&<span/>}
         </div>
-      ):filtered.map((t,i)=>(
-        <div key={t.id} style={{display:'grid',gridTemplateColumns:cols,padding:'12px 14px',gap:10,alignItems:'center',borderBottom:'1px solid var(--brd)',background:i%2===0?'transparent':'rgba(99,102,241,.02)',transition:'background .15s'}}
-          onMouseEnter={e=>e.currentTarget.style.background='var(--hov)'}
-          onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'transparent':'rgba(99,102,241,.02)'}>
-          <div style={{fontSize:12,color:'var(--tm)',fontFamily:'Space Mono'}}>{t.date}</div>
-          <div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</div>
-          <div style={{display:'flex',alignItems:'center',gap:5}}>
-            <span style={{width:7,height:7,borderRadius:2,background:t.categoryColor,display:'inline-block',flexShrink:0}}/>
-            <span style={{fontSize:12,color:'var(--ts)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.categoryIcon} {t.categoryLabel}</span>
+        {filtered.length===0?(
+          <div style={{textAlign:'center',padding:'60px 20px',color:'var(--tm)'}}>
+            <div style={{fontSize:38,marginBottom:10}}>◻</div>
+            <div className="fd" style={{fontSize:14}}>No transactions found</div>
+            <div style={{fontSize:12,marginTop:5}}>Try adjusting your filters</div>
           </div>
-          <div><span style={{fontSize:11,padding:'3px 7px',borderRadius:4,fontFamily:'Space Mono',background:t.type==='income'?'var(--gd)':'var(--rdd)',color:t.type==='income'?'var(--gr)':'var(--rd)',textTransform:'uppercase',letterSpacing:'0.05em'}}>{t.type==='income'?'↑':'↓'} {t.type}</span></div>
-          <div className="fd" style={{fontSize:14,fontWeight:700,color:t.type==='income'?'var(--gr)':'var(--tp)'}}>{t.type==='income'?'+':'-'}{fc(t.amount)}</div>
-          {isAdmin&&(
-            <div style={{display:'flex',gap:3}}>
-              <button onClick={()=>{setEdit(t);setModal(true);}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--tm)',fontSize:13,padding:4,borderRadius:4}} onMouseEnter={e=>e.currentTarget.style.color='var(--al)'} onMouseLeave={e=>e.currentTarget.style.color='var(--tm)'}>✎</button>
-              <button onClick={()=>setDel(t.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--tm)',fontSize:13,padding:4,borderRadius:4}} onMouseEnter={e=>e.currentTarget.style.color='var(--rd)'} onMouseLeave={e=>e.currentTarget.style.color='var(--tm)'}>✕</button>
+        ):filtered.map((t,i)=>(
+          <div key={t.id} style={{display:'grid',gridTemplateColumns:cols,padding:'12px 14px',gap:10,alignItems:'center',borderBottom:'1px solid var(--brd)',background:i%2===0?'transparent':'rgba(99,102,241,.02)',transition:'background .15s'}}
+            onMouseEnter={e=>e.currentTarget.style.background='var(--hov)'}
+            onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'transparent':'rgba(99,102,241,.02)'}>
+            <div style={{fontSize:12,color:'var(--tm)',fontFamily:'Space Mono'}}>{t.date}</div>
+            <div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</div>
+            <div style={{display:'flex',alignItems:'center',gap:5}}>
+              <span style={{width:7,height:7,borderRadius:2,background:t.categoryColor,display:'inline-block',flexShrink:0}}/>
+              <span style={{fontSize:12,color:'var(--ts)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.categoryIcon} {t.categoryLabel}</span>
             </div>
-          )}
-        </div>
-      ))}
+            <div><span style={{fontSize:11,padding:'3px 7px',borderRadius:4,fontFamily:'Space Mono',background:t.type==='income'?'var(--gd)':'var(--rdd)',color:t.type==='income'?'var(--gr)':'var(--rd)',textTransform:'uppercase',letterSpacing:'0.05em'}}>{t.type==='income'?'↑':'↓'} {t.type}</span></div>
+            <div className="fd" style={{fontSize:14,fontWeight:700,color:t.type==='income'?'var(--gr)':'var(--tp)', textAlign:'right'}}>{t.type==='income'?'+':'-'}{fc(t.amount)}</div>
+            {isAdmin&&(
+              <div style={{display:'flex',gap:3, justifyContent:'flex-end'}}>
+                <button onClick={()=>{setEdit(t);setModal(true);}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--tm)',fontSize:13,padding:4,borderRadius:4}}>✎</button>
+                <button onClick={()=>setDel(t.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--tm)',fontSize:13,padding:4,borderRadius:4}}>✕</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
       {del&&(
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
           <div className="anim" style={{...card,maxWidth:340,width:'100%',margin:16}}>
@@ -301,7 +381,7 @@ function Insights(){
                   <span className="fd" style={{fontSize:13,color:c.color,fontWeight:700}}>{fk(c.amount)}</span>
                 </div>
                 <div style={{height:4,background:'var(--el)',borderRadius:2,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${c.pct}%`,background:c.color,borderRadius:2,transition:'width .6s',opacity:.8}}/>
+                  <div style={{height:'100%',width:`${c.pct}%`,background:c.color,borderRadius:2,transition:'width .6s',opacity:.8}/>
                 </div>
               </div>
             ))
