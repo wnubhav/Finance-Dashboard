@@ -381,7 +381,7 @@ function Insights(){
                   <span className="fd" style={{fontSize:13,color:c.color,fontWeight:700}}>{fk(c.amount)}</span>
                 </div>
                 <div style={{height:4,background:'var(--el)',borderRadius:2,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${c.pct}%`,background:c.color,borderRadius:2,transition:'width .6s',opacity:.8}/>
+                  <div style={{ height: '100%', width: c.pct + '%', background: c.color, borderRadius: 2, transition: 'width .6s', opacity: 0.8 }} />
                 </div>
               </div>
             ))
